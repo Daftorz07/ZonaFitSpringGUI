@@ -18,7 +18,7 @@ import java.util.Scanner;
  * Básicamente, te permite ejecutar lógica de negocio al inicio de la aplicación.
  */
 
-@SpringBootApplication
+//@SpringBootApplication
 public class ZonaFitApplication implements CommandLineRunner {
 
     @Autowired
