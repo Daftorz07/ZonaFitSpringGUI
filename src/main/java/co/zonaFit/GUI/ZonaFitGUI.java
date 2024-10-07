@@ -7,8 +7,6 @@ import org.springframework.stereotype.Component;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
@@ -62,12 +60,8 @@ public class ZonaFitGUI extends JFrame {
         btnLimpiar.addActionListener(e -> limpiarFormulario());
 
         //Eliminar Registro de cliente
-        btnEliminar.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
+        btnEliminar.addActionListener(e -> eliminarCliente());
 
-            }
-        });
     }
 
     // ---------------------------------------------------------------------------
@@ -88,9 +82,16 @@ public class ZonaFitGUI extends JFrame {
     private void createUIComponents() {
 
         //Configuración de la tabla
-        this.tablaModeloClientes = new DefaultTableModel(0, 4);
+        this.tablaModeloClientes = new DefaultTableModel(0, 4){
+            //Evitar que se actualice un registro desde la tabla
+            @Override
+            public boolean isCellEditable(int row, int column) {
+                return false;
+            }
+        };
         String[] cabeceros = {"Id", "Nombre", "Apellido", "Membresía"};
         this.tablaModeloClientes.setColumnIdentifiers(cabeceros);
+
 
         //Creacion de la tabla
         this.tablaClientes = new JTable(tablaModeloClientes);
@@ -114,8 +115,9 @@ public class ZonaFitGUI extends JFrame {
     }
 
     private void mostrarMensaje(String campo) {
-        String mensaje = "El campo " + campo + " es obligatorio";
-        JOptionPane.showMessageDialog(this, mensaje);
+        //String mensaje = "El campo " + campo + "es obligatorio";
+        String mensaje = String.format("El campo %s es obligatorio", campo);
+        JOptionPane.showMessageDialog(this, mensaje, "Campo requerido", JOptionPane.WARNING_MESSAGE);
     }
 
     // ---------------------------------------------------------------------------
@@ -151,20 +153,40 @@ public class ZonaFitGUI extends JFrame {
             nombreCliente.requestFocusInWindow(); // recupera el foco
             return;
         }
+
         if (apellidoCliente.getText().isEmpty()) {
             mostrarMensaje("Apellido");
             apellidoCliente.requestFocusInWindow(); // recupera el foco
             return;
         }
-        if (membershipCliente.getText().isEmpty()) {
-            mostrarMensaje("Membresía");
-            membershipCliente.requestFocusInWindow(); // recupera el foco
+        //----------------------------------------------------------------
+        // Validacion tipo Membresía -------------------------------------
+        //----------------------------------------------------------------
+        boolean validInput = false;
+        int membership = 0;
+
+        while (!validInput) {
+            try {
+                if (membershipCliente.getText().isEmpty()) {
+                    mostrarMensaje("Membresía");
+                    membershipCliente.requestFocusInWindow(); // recupera el foco
+                }
+
+                // Intentar convertir el valor ingresado a int
+                membership = Integer.parseInt(membershipCliente.getText().trim());
+
+                // Si llega aquí, el valor es válido
+                validInput = true;
+
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(null, "La Membresía tiene que ser un numero", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
         }
 
         //Se recuperan los datos
         String username = nombreCliente.getText().trim();
         String lastname = apellidoCliente.getText().trim();
-        int membership = Integer.parseInt(membershipCliente.getText().trim());
 
         //Objeto cliente
         Cliente newCliente = new Cliente(this.idCliente, username, lastname, membership);
@@ -174,8 +196,8 @@ public class ZonaFitGUI extends JFrame {
          * Si trae algún valor significa que el registro será actualizado
          */
 
-        //Se guarda el cliente
-        clienteServicio.guardarCliente(newCliente);
+            //Se guarda el cliente
+            clienteServicio.guardarCliente(newCliente);
 
         //Verificación de operación
         if (this.idCliente == null) {
@@ -192,7 +214,7 @@ public class ZonaFitGUI extends JFrame {
     // ---------------------------------------------------------------------------
     // Actualizar Clientes -------------------------------------------------------
     // ---------------------------------------------------------------------------
-    private void cargarClienteSeleccionado() {
+    private int cargarClienteSeleccionado() {
 
         int registroSeleccionado = tablaClientes.getSelectedRow();
 
@@ -201,6 +223,7 @@ public class ZonaFitGUI extends JFrame {
 
             //Recuperando el ID del cliente que se ha seleccionado
             String idClienteSeleccionado = tablaClientes.getModel().getValueAt(registroSeleccionado, 0).toString();
+            //Asignando ID del cliente para manipulación del registro seleccionado a través del ID
             this.idCliente = Integer.parseInt(idClienteSeleccionado);
 
             //Seteando los valores del registro seleccionado en el formulario
@@ -215,10 +238,35 @@ public class ZonaFitGUI extends JFrame {
 
             //Id Cliente Seleccionado
             System.out.println(idCliente);
+
         }
+        return registroSeleccionado;
     }
 
     // ---------------------------------------------------------------------------
     // Eliminar Clientes ---------------------------------------------------------
     // ---------------------------------------------------------------------------
+    private void eliminarCliente() {
+
+        int registroSeleccionado = cargarClienteSeleccionado();
+
+        if (registroSeleccionado != -1) {
+
+            Cliente eliminarCliente = new Cliente();
+            eliminarCliente.setId_cliente(this.idCliente);
+
+            clienteServicio.eliminarCliente(eliminarCliente);
+
+            String mensaje = String.format("Cliente con ID %s fue eliminado", this.idCliente);
+            JOptionPane.showMessageDialog(this, mensaje);
+
+            //Se ejecutan los metodos
+            limpiarFormulario();
+            listarClientes();
+
+        } else {
+            JOptionPane.showMessageDialog(this, "Para eliminar debe seleccionar un cliente", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
 }
