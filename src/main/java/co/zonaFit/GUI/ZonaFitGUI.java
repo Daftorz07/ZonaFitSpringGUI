@@ -95,6 +95,8 @@ public class ZonaFitGUI extends JFrame {
 
         //Creacion de la tabla
         this.tablaClientes = new JTable(tablaModeloClientes);
+        //Restricción de la selección de la tabla a un solo registro
+        this.tablaClientes.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
 
         //Cargando los clientes a la tabla
         listarClientes();
